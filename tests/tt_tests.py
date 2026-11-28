@@ -22399,7 +22399,7 @@ def blok_prikbord_herstel209():
 const S = window.TT_STUB;
 S.session = { user: { id: 'u1', email: 'a@talenttent.org' } };
 S.data.musicians = [
-  { id: 'm1', user_id: 'u1', fname: 'Ronald', username: 'ronnie', weergavenaam: 'Ronald', zip: '2497', city: 'Den Haag', birth_date: '1970-08-28', bio: '' },
+  { id: 'm1', user_id: 'u1', fname: 'Ronald', username: 'ronnie', weergavenaam: 'Ronald', zip: '2497', city: 'Den Haag', birth_date: '1970-08-28', bio: '', profile_complete: true },
   { id: 'm3', fname: 'Mila', username: 'mila', weergavenaam: 'Mila', city: 'Rijswijk' },
   { id: 'm5', fname: 'Tom', username: 'tom', weergavenaam: 'Tom', city: 'Den Haag' }];
 S.data.musicians.forEach(m => Object.assign(m, { musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
@@ -22537,7 +22537,7 @@ def blok_prikbord_sessie212():
 const S = window.TT_STUB;
 S.session = { user: { id: 'u1', email: 'a@talenttent.org' } };
 S.data.musicians = [
-  { id: 'm1', user_id: 'u1', fname: 'Ronald', username: 'ronnie', weergavenaam: 'Ronald', zip: '2497', city: 'Den Haag', birth_date: '1970-08-28', bio: '' },
+  { id: 'm1', user_id: 'u1', fname: 'Ronald', username: 'ronnie', weergavenaam: 'Ronald', zip: '2497', city: 'Den Haag', birth_date: '1970-08-28', bio: '', profile_complete: true },
   { id: 'm2', fname: 'Daan', username: 'daan', weergavenaam: 'Daan', city: 'Den Haag' }];
 S.data.musicians.forEach(m => Object.assign(m, { musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
 const L = %s;
@@ -23038,6 +23038,92 @@ S.data.prikbord_zoek = window.__PB_BEWAARD ? [{ musician_id: 'm1', plaats: 'Delf
               vd.get("koppenOud") == ["Wie ben ik", "Kennismaken", "Verder nog"]
               and vd.get("aanpassen") == {"verder": "Eerst een bericht.\n\nIk heb een versterker.", "kennisVeld": False, "kennis": False}, j(vd))
 
+def blok_prikbord_tt702():
+    print("\nBlok 183 — TT-702 (besluit Ronald 28-11-2026: \"ja\"): wie zijn e-mailadres nog niet bevestigde, plaatst, reageert, stuurt en nodigt niet uit op het prikbord")
+    stub_js = open(STUB, encoding="utf-8").read()
+    init = """
+const S = window.TT_STUB;
+S.session = { user: { id: 'u1', email: 'a@talenttent.org' } };
+const STAND = window.__STAND;
+S.data.musicians = [
+  { id: 'm1', user_id: 'u1', fname: 'Sem', username: 'sem', weergavenaam: 'Sem', zip: '2497', city: 'Den Haag', birth_date: '2009-03-01', bio: '',
+    profile_complete: STAND === 'bevestigd', email_bevestigd_op: STAND === 'bevestigd' ? new Date().toISOString() : null, wacht_op_bevestiging: STAND === 'wacht' },
+  { id: 'm2', fname: 'Daan', username: 'daan', weergavenaam: 'Daan', city: 'Den Haag' }];
+S.data.musicians.forEach(m => Object.assign(m, { musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+const L = %s;
+S.rpcResults.tt_prikbord = (a) => a.p_id ? L.filter(x => x.id === a.p_id) : L;
+S.rpcResults.tt_mijn_oproepen = () => [];
+S.rpcResults.tt_mijn_reacties = () => [];
+S.rpcResults.tt_nieuwe_reacties = 0;
+S.rpcResults.tt_get_my_birth_date = '2009-03-01';
+S.rpcResults.tt_resolve_search_origin = () => [{ lat: 52.08, lng: 4.31 }];
+S.data.prikbord_zoek = [];
+""" % PB_OPROEPEN
+    fouten, uit = [], {}
+    httpd, port = serve()
+    MEET = r"""async () => {
+      const w = (ms = 500) => new Promise(r => setTimeout(r, ms));
+      const $ = id => document.getElementById(id);
+      const toast = () => { const t = $('appToast'), v = t.classList.contains('visible') ? t.textContent : ''; t.textContent = ''; t.classList.remove('visible'); return v; };
+      const open = id => { const m = $(id); return !!m && m.classList.contains('visible'); };
+      const u = {};
+      toast();
+      document.querySelector('.pb-plaatsen-knop').click(); await w();
+      u.plaatsen = { toast: toast(), laag: pbLaag };
+      pbForm = null; pbLaag = null; pbToonLaag(); await w(200);
+      pbOpenOproep('o1'); await w(300);
+      $('pbReagerenKnop').click(); await w();
+      u.reageren = { toast: toast(), venster: open('pbReagerenModal') };
+      if (open('pbReagerenModal')) { pbReagerenSluiten(); await w(200); }
+      pbOpenOproep('o2'); await w(300);
+      const v0 = huidigeView;
+      document.querySelector('#pbOproepInhoud button[data-bericht-id]').click(); await w(700);
+      u.bericht = { toast: toast(), gesprek: huidigeView === 'messages' && v0 !== 'messages' };
+      if (huidigeView === 'messages') { appTerug(); await w(500); }
+      pbMijn = %s;
+      const v1 = huidigeView;
+      await pbUitnodigen('r1', 'm3', 'Mila', 'o9'); await w(700);
+      u.uitnodigen = { toast: toast(), gesprek: huidigeView === 'messages' && v1 !== 'messages' };
+      return u; }""" % PB_MIJN
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for stand in ("wacht", "onaf", "bevestigd"):
+            ctx = browser.new_context(viewport={"width": 360, "height": 800}, color_scheme="dark", is_mobile=True, has_touch=True)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            ctx.add_init_script("window.__STAND = %s;" % json.dumps(stand))
+            pg = ctx.new_page()
+            pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+            pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js + init))
+            pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+            pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            pg.wait_for_timeout(1500)
+            pg.locator("#bottomNavSearch").click(); pg.wait_for_timeout(500)
+            pg.locator("#zoekStart .tile-title:has-text('Prikbord')").click(); pg.wait_for_timeout(1200)
+            uit[stand] = pg.evaluate(MEET)
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    j = lambda x: json.dumps(x, ensure_ascii=False)
+    check("TT-702: geen JS-fout", not fouten, " | ".join(fouten)[:800])
+    B = "Bevestig eerst je e-mailadres. Tik op de knop in de mail die we je stuurden. Daarna kun je "
+    a, b, c = uit.get("wacht", {}), uit.get("onaf", {}), uit.get("bevestigd", {})
+    check("TT-702: niet bevestigd: Oproep plaatsen geeft de melding en opent het formulier niet",
+          a.get("plaatsen", {}).get("toast") == B + "een oproep plaatsen." and a.get("plaatsen", {}).get("laag") != "plaatsen", j(a.get("plaatsen")))
+    check("TT-702: niet bevestigd: Reageren geeft de melding en opent het venster niet",
+          a.get("reageren") == {"toast": B + "reageren.", "venster": False}, j(a.get("reageren")))
+    check("TT-702: niet bevestigd: Stuur een bericht geeft de melding en opent geen gesprek",
+          a.get("bericht") == {"toast": B + "een bericht sturen.", "gesprek": False}, j(a.get("bericht")))
+    check("TT-702: niet bevestigd: Uitnodigen geeft de melding en opent geen gesprek",
+          a.get("uitnodigen") == {"toast": B + "iemand uitnodigen.", "gesprek": False}, j(a.get("uitnodigen")))
+    check("TT-702: profiel niet af: dezelfde knoppen zeggen \"Maak eerst je profiel af. Daarna kun je …\"",
+          b.get("plaatsen", {}).get("toast") == "Maak eerst je profiel af. Daarna kun je een oproep plaatsen."
+          and b.get("reageren", {}).get("toast") == "Maak eerst je profiel af. Daarna kun je reageren."
+          and b.get("bericht", {}).get("toast") == "Maak eerst je profiel af. Daarna kun je een bericht sturen.", j(b))
+    check("TT-702: bevestigd: Oproep plaatsen opent het formulier, Reageren het venster, Stuur een bericht en Uitnodigen het gesprek; geen melding",
+          c.get("plaatsen") == {"toast": "", "laag": "plaatsen"} and c.get("reageren") == {"toast": "", "venster": True}
+          and c.get("bericht") == {"toast": "", "gesprek": True} and c.get("uitnodigen") == {"toast": "", "gesprek": True}, j(c))
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -23118,6 +23204,7 @@ BLOKKEN = [
     blok_prikbord_sessie212,
     blok_prikbord_cluster3,
     blok_prikbord_deel5,
+    blok_prikbord_tt702,
 ]
 
 

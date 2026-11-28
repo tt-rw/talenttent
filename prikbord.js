@@ -439,9 +439,19 @@ function pbOpenVanBuiten(o) {
 
 
 
-function pbBerichtOproep(id) {
+
+
+
+async function pbEmailWacht(wat) {
+  const wacht = await emailWachtOpBevestiging();
+  if (wacht) showToast(emailBevestigMelding(wacht, wat));
+  return !!wacht;
+}
+
+async function pbBerichtOproep(id) {
   const o = pbLijst.find(x => x.id === id) || pbOpen;
   if (!o) return;
+  if (await pbEmailWacht('een bericht sturen')) return;
   gesprekTekstKlaar(o.plaatser_id, o.naam, PB_TT.bericht.replace('{naam}', o.naam), o.id);
 }
 
@@ -449,6 +459,7 @@ function pbBerichtOproep(id) {
 async function pbReagerenOpen() {
   const o = pbOpen;
   if (!o) return;
+  if (await pbEmailWacht('reageren')) return;
   const vak = document.getElementById('pbReagerenInhoud');
   document.getElementById('pbReagerenKop').textContent = 'Reageren';
 
@@ -640,6 +651,7 @@ function pbLegeForm() {
 
 async function pbPlaatsenStart(vanBand) {
   if (!currentUser || !hasOwnProfile) { profielKeuzeOpen({ soort: 'plaatsen' }); return; }
+  if (await pbEmailWacht('een oproep plaatsen')) return;
   await pbMijLaden();
   pbForm = pbLegeForm();
   pbVanBand = vanBand || null;
@@ -1126,9 +1138,10 @@ function pbOpenMijn(id) { pbMijnOpen = id || null; pbZetTab('mijn'); }
 
 
 
-function pbUitnodigen(reactieId, musicianId, naam, oproepId) {
+async function pbUitnodigen(reactieId, musicianId, naam, oproepId) {
   const m = pbMijn.find(x => x.oproep.id === oproepId);
   if (!m) return;
+  if (await pbEmailWacht('iemand uitnodigen')) return;
   const tekst = (m.oproep.band_id ? PB_TT.uitnodigenBand : PB_TT.uitnodigen).replace('{naam}', naam);
   gesprekTekstKlaar(musicianId, naam, tekst, oproepId, reactieId);
 }
