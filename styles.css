@@ -5411,6 +5411,8 @@
   .pb-oproep-tekst { font-size: 15px; line-height: var(--regel-15); color: var(--text); margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
 
   .pb-vakken { margin: 0 0 16px; }
+
+  .pb-waarvoor { margin-top: 16px; }
   .pb-vak-kop { font-size: var(--fs-sm); line-height: var(--regel-12); font-weight: 700; color: var(--muted); margin: 16px 0 4px; }
   .pb-feiten { display: grid; grid-template-columns: max-content 1fr; gap: 8px 12px; margin: 0 0 16px; font-size: 12px; line-height: var(--regel-12); }
   .pb-feiten dt { color: var(--muted); }
@@ -5429,6 +5431,8 @@
   .pb-knoppen-raster { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .pb-knoppen-raster .btn { min-width: 0; padding-left: 12px; padding-right: 12px; }
   .pb-knoppen-raster > .btn:first-child:nth-last-child(odd) { grid-column: 1 / -1; }
+
+  .pb-knoppen-raster > .btn.pb-knop-vol { grid-column: 1 / -1; }
   .pb-nieuw { margin-left: 8px; font-size: 11px; line-height: var(--regel-11); font-weight: 700; color: var(--accent); flex: none; }
   .pb-media-melding, .pb-afspraak-melding { margin-top: 12px; }
 
@@ -5477,6 +5481,8 @@
   .pb-ballon { display: flow-root; }
   .pb-ballon .message-bubble { max-width: 100%; margin-bottom: 0; }
   .pb-profiel { margin-top: 12px; }
+
+  .pb-gesprek-knop { display: block; width: 100%; margin-top: 12px; }
   .pb-uitnodigen { flex: none; margin-left: auto; padding-left: 8px; }
 
 

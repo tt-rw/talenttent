@@ -110,7 +110,7 @@ function pbLeeftijdTekst(o) {
 
 function pbVoorWie(o) {
   const alle = PB_LEEFTIJDEN, g = alle.filter(x => (o.leeftijden || []).includes(x));
-  if (g.length === alle.length) return 'Elke leeftijd';
+  if (!g.length || g.length === alle.length) return 'Elke leeftijd';
   const van = x => parseInt(x, 10), tot = x => x === '35+' ? null : parseInt(x.split('-')[1], 10);
   const stukken = [];
   for (let i = 0; i < g.length;) {
@@ -400,7 +400,10 @@ function pbOproepHTML(o, voorbeeld) {
   const wieKort = [o.plaatser_naam, o.soort === 'beschikbaar' ? '' : pbInstrumentKlein(o.plaatser_instrument)].filter(Boolean).join(' · ');
   const wieVast = [pbLeeftijdTekst(o), o.plaats, voorbeeld ? '' : afstandTekst(o.km)].filter(Boolean).join(' · ');
   const wie = `<span class="pb-regel-kort">${escHtml(wieKort)}</span>${wieVast ? `<span class="pb-regel-vast">${wieKort ? '&nbsp;·&nbsp;' : ''}${escHtml(wieVast)}</span>` : ''}`;
-  const doelRegel = [pbDoelenTekst(o.doelen), ...(o.genres || [])].filter(Boolean).map(escHtml).join(' · ');
+
+
+  const doelRegel = (o.genres || []).map(escHtml).join(' · ');
+  const waarvoor = pbDoelenTekst(o.doelen).toLowerCase();
 
   const datum = `Geplaatst op ${pbDatum(o.verlengd_op || o.geplaatst_op || new Date().toISOString())}`;
   const feiten = [
@@ -410,7 +413,7 @@ function pbOproepHTML(o, voorbeeld) {
 
 
   const koppen = pbVakKoppen(!!o.band_id, o.soort);
-  const vakken = PB_VAK_TOON.map(k => (o.vakken || {})[k] ? `<div class="pb-vak-kop">${escHtml(koppen[k])}</div><p class="pb-oproep-tekst">${escHtml(o.vakken[k])}</p>` : '').join('');
+  const vakken = (waarvoor ? `<p class="pb-oproep-tekst pb-waarvoor"><strong>${o.soort === 'beschikbaar' ? 'Beschikbaar voor' : 'Gezocht voor'}:</strong> ${escHtml(waarvoor)}</p>` : '') + PB_VAK_TOON.map(k => (o.vakken || {})[k] ? `<div class="pb-vak-kop">${escHtml(koppen[k])}</div><p class="pb-oproep-tekst">${escHtml(o.vakken[k])}</p>` : '').join('');
   let knop = '';
   if (!voorbeeld) {
 
@@ -430,7 +433,7 @@ function pbOproepHTML(o, voorbeeld) {
         <div class="result-row-avatar pb-oproep-foto${o.band_id ? ' result-vierkant' : ''}">${fotoHTML(o.foto, o.naam) || ZONDER_FOTO_HTML}</div>
         <div class="pb-oproep-wie">
           <div class="pb-oproep-titel pb-eenregel">${pbTitelHTML(o, 'pb-oproep-titel-tekst')}</div>
-          <div class="result-row-meta">${doelRegel}</div>
+          ${doelRegel ? `<div class="result-row-meta">${doelRegel}</div>` : ''}
           <div class="result-row-meta pb-eenregel">${wie}</div>
         </div>
       </div>
@@ -554,7 +557,7 @@ function pbEersteAfspraakTonen() { return PB_MIJ.leeftijd != null && PB_MIJ.leef
 
 const PB_LEES_DIT_EERST = [
   ['Weet wat je zoekt', 'Welk instrument, welk niveau, en waarvoor: jammen, een vaste band, invallen of een project. Vraag een niveau dat bij jou of je band past, en zeg eerlijk wat jij of jullie willen bereiken.'],
-  ['Laat je energie zien', 'Rustig, gezellig of fanatiek: vertel het. Dan reageren de mensen die bij je passen. Schrijf gewoon en duidelijk; een neutrale toon werkt altijd.'],
+  ['Laat je energie zien', 'Rustig, gezellig of fanatiek: vertel het. Schrijf zoals je praat. Dan leest het fijn en reageren mensen die bij je passen.'],
   ['Zet je media klaar', 'Een filmpje, een demo of een link op je profiel zegt meer dan veel woorden.'],
   ['Wees concreet', 'Noem dagen, plaatsen en kosten. Wie twijfelt, reageert niet.'],
   ['Denk aan wie reageert', 'Die is misschien ook wat zenuwachtig. Maak de eerste stap klein en duidelijk. Een goede klik is net zo belangrijk als goed samen spelen.'],
@@ -581,58 +584,108 @@ const PB_VOORBEELDEN = {
 
 
 
+
   band: {
     wie: ['Coverband', 'Band met eigen nummers', 'Beginnende band'],
     vakken: {
-      wie: { tips: ['Welke muziek spelen jullie? Noem een paar artiesten als referentie.', 'Wie zitten er in de band, en hoe oud zijn jullie ongeveer?', 'Schrijf kort en duidelijk, in een neutrale toon.', 'Zet een demo of opname bij Onze media. Dan hoort iemand meteen hoe jullie klinken.'],
-        vb: ['Een coverband van vier scholieren tussen 16 en 18 uit Den Haag: zang, gitaar, drums en keyboard. We spelen pop- en rocknummers die iedereen kent, van Coldplay tot Doe Maar.',
-          'Een rockband van drie muzikanten van 17 tot 19 uit Delft. We schrijven eigen nummers, met Arctic Monkeys en Royal Blood als referentie.',
-          'Een punkband met gitaar, bas en zang, alle drie 15 jaar. We schrijven onze eerste eigen nummers.'] },
-      wil: { tips: ['Wat willen jullie: optreden, eigen nummers maken of vooral samen spelen?', 'Wat ligt er al: nummers, een set, een oefenruimte?', 'Zeg het eerlijk. Willen jullie allemaal hetzelfde, dan houdt een band het langer vol.'],
-        vb: ['We willen een vaste set van tien nummers en daarmee spelen op schoolfeesten en open podia. Eerst maken we de bezetting compleet.',
-          'Er liggen zes eigen nummers die bijna speelklaar zijn. Dit jaar willen we een demo opnemen en optreden in jongerencentra.',
-          'We willen beter worden en dit jaar ons eerste optreden doen, bijvoorbeeld op het schoolfeest.'] },
-      zoek: { tips: ['Welk instrument zoek je, en welk niveau is nodig?', 'Vertel ook hoe jullie samenwerken. Dat telt net zo zwaar als iemands niveau.', 'Wat vraag je van iemand: elke week komen, thuis oefenen, meedenken over nummers?'],
-        vb: ['Een bassist die zijn instrument goed beheerst en elke week kan repeteren. Meezingen is mooi meegenomen.',
-          'Een drummer die strak speelt, goed luistert en mee wil schrijven aan eigen nummers.',
-          'Een drummer die net als wij nog leert. Afspraken nakomen vinden we net zo belangrijk als techniek.'] },
-      waar: { tips: ['Noem een dag en een plek, zoals zaterdagmiddag in Den Haag-Zuid.', 'Hoe vaak repeteren jullie, en hoe lang?', 'Zijn er kosten, zoals de huur van de oefenruimte? Zeg het meteen.'],
-        vb: ['Elke zaterdagmiddag van 13.00 tot 16.00 uur in een oefenruimte in Den Haag-Zuid. De huur delen we.',
-          'Elke vrijdagavond in de oefenruimte van het jongerencentrum in Delft. Daar staat een drumstel.',
+      wie: { tips: ['Welke muziek maken jullie? Een paar artiesten als voorbeeld maken het meteen duidelijk.', 'Wie zitten er in de band, en hoe oud zijn jullie ongeveer?', 'Vertel het gewoon zoals jullie het tegen een vriend zouden zeggen.', 'Staat er een demo of opname bij Onze media? Dan hoort iemand meteen hoe jullie klinken.'],
+        vb: ['Wij zijn een coverband van vier scholieren tussen 16 en 18 uit Den Haag: zang, gitaar, drums en keyboard. We spelen pop en rock die iedereen kent, van Coldplay tot Doe Maar.',
+          'We zijn een rockband van drie muzikanten van 17 tot 19 uit Delft. We schrijven eigen nummers, met Arctic Monkeys en Royal Blood als inspiratie.',
+          'We zijn een punkband met gitaar, bas en zang, alle drie 15 jaar. We werken aan onze eerste eigen nummers.'] },
+      wil: { tips: ['Waar hebben jullie zin in: optreden, eigen nummers maken of vooral samen spelen?', 'Wat ligt er al: nummers, een set, een oefenruimte?', 'Hoe eerlijker je het vertelt, hoe makkelijker je mensen vindt die er net zo in staan.'],
+        vb: {
+          band: ['We willen graag een vaste set van tien nummers en daarmee spelen op schoolfeesten en open podia.',
+            'Er liggen zes eigen nummers die bijna klaar zijn. Dit jaar willen we een demo opnemen en optreden in jongerencentra.',
+            'We willen samen beter worden en dit jaar ons eerste optreden doen, misschien op het schoolfeest.'],
+          jammen: ['Naast de repetities jammen we graag eens met nieuwe mensen. Gewoon voor de lol, en wie weet wat eruit komt.',
+            'We jammen vaak om ideeën voor nieuwe nummers te vinden. Een extra muzikant brengt altijd nieuwe ideeën mee.',
+            'We willen graag vaker jammen, met iemand erbij die het ook leuk vindt om te leren.'],
+          invallen: ['Voor een paar optredens zoeken we iemand die wil invallen. Onze vaste drummer kan er even niet bij zijn.',
+            'Onze bassist gaat een paar maanden op reis. Zo lang zoeken we iemand die wil invallen.',
+            'Voor het schoolfeest zoeken we iemand die een keer wil invallen.'],
+          projecten: ['We doen mee aan een talentenjacht en zoeken voor dat project een extra muzikant.',
+            'We willen een demo van drie nummers opnemen en zoeken daarvoor iemand die mee wil spelen.',
+            'Op de eindavond van school willen we een paar nummers spelen, en daar zoeken we iemand bij.'] } },
+      zoek: { tips: ['Wie zouden jullie graag tegenkomen: welk instrument, en ongeveer welk niveau?', 'Hoe gaat het er bij jullie aan toe? Een goede klik telt net zo zwaar als goed spelen.', 'Wat hopen jullie: elke week samen spelen, of af en toe?'],
+        vb: {
+          band: ['Een bassist die zijn instrument goed kent en het leuk vindt om elke week te repeteren. Meezingen is mooi meegenomen.',
+            'Een drummer die strak speelt, goed luistert en zin heeft om mee te schrijven aan eigen nummers.',
+            'Een drummer die net als wij nog leert. Afspraken nakomen vinden we net zo belangrijk als techniek.'],
+          jammen: ['Een muzikant die zin heeft om een keer mee te jammen. Welk instrument maakt niet zoveel uit.',
+            'Een toetsenist of saxofonist die het leuk vindt om te experimenteren.',
+            'Iemand die het leuk vindt om rustig samen te spelen en nog wil leren, net als wij.'],
+          invallen: ['Een drummer die onze nummers een paar keer wil meespelen. De setlist sturen we van tevoren.',
+            'Een bassist die een paar maanden wil invallen en het leuk vindt om eigen nummers te spelen.',
+            'Iemand die een keer wil meespelen op het schoolfeest. We oefenen de nummers vooraf samen.'],
+          projecten: ['Een zanger of zangeres voor de talentenjacht. We oefenen er een paar weken samen voor.',
+            'Een toetsenist die drie nummers mee wil opnemen. Het project duurt ongeveer een maand.',
+            'Een gitarist die mee wil doen aan de eindavond van school. We spelen er twee nummers.'] } },
+      waar: { tips: ['Op welke dag en waar repeteren jullie, bijvoorbeeld zaterdagmiddag in Den Haag-Zuid?', 'Hoe vaak spelen jullie samen, en hoe lang?', 'Zijn er kosten, zoals de huur van de oefenruimte? Dan is het fijn om dat meteen te weten.'],
+        vb: ['Elke zaterdagmiddag van 13.00 tot 16.00 uur in een oefenruimte in Den Haag-Zuid. De huur delen we samen.',
+          'Elke vrijdagavond in de oefenruimte van het jongerencentrum in Delft. Daar staat een drumstel klaar.',
           'Elke woensdag na school, van 16.00 tot 18.00 uur, in het jongerencentrum in Rijswijk.'] },
-      verder: { tips: ['Een keer samen spelen zegt meer dan veel berichten.', 'Stel een kleine eerste stap voor, zoals één nummer samen spelen.', 'Hou het contact eerst via de app. Later kun je je e-mailadres of telefoonnummer nog geven.', 'Zet hier ook wat al vaststaat of wat iemand moet meenemen.'],
-        vb: ['Stuur ons een bericht via de app. Daarna spreken we af om twee nummers samen te spelen. Ken je iemand die past? Deel de oproep dan.',
-          'Stuur een bericht, het liefst met een filmpje of opname. Daarna spelen we een keer samen en kijken we of het klikt. Ideeën voor nieuwe nummers zijn welkom.',
-          'Stuur ons een filmpje van jezelf, al is het met je telefoon. Daarna spreken we af in de oefenruimte. Je hoeft alleen je stokken mee te nemen.'] }
+      verder: { tips: ['Een keer samen spelen zegt vaak meer dan veel berichten.', 'Een kleine eerste stap werkt goed, zoals één nummer samen spelen.', 'Het is fijn om het contact eerst via de app te houden. Je e-mailadres of telefoonnummer kun je later nog geven.', 'Is er iets wat al vaststaat, of iets wat iemand kan meenemen? Dan kun je dat hier kwijt.'],
+        vb: ['Stuur ons gerust een berichtje via de app. Misschien kunnen we dan een keer een paar nummers samen spelen. Ken je iemand die erbij past? Dan vinden we het fijn als je de oproep deelt.',
+          'Heb je een filmpje of opname? Dan horen we graag hoe je klinkt. Daarna kunnen we een keer samen spelen en kijken of het klikt.',
+          'Lijkt het je leuk? Stuur ons een berichtje. Je bent welkom in de oefenruimte; alleen je stokken hoef je mee te nemen.'] }
     }
   },
-
   ik: {
     wie: ['Colin, gitarist', 'Dylan, beginnende drummer', 'Lisa, zangeres'],
     vakken: {
-      wie: { tips: ['Noem je instrument, hoe lang je speelt en welke muziek je maakt.', 'Hoe oud ben je ongeveer, en waar woon je?', 'Noem een paar artiesten of bands als referentie.', 'Zet een filmpje of opname in Je mediahoek. Dan hoort iemand meteen hoe je speelt.'],
-        vb: ['Colin, 17, uit Den Haag. Ik speel vier jaar gitaar, vooral rock en indie, met Arctic Monkeys en Royal Blood als referentie.',
-          'Dylan, 15, uit Rijswijk. Ik drum sinds een jaar en heb les op de muziekschool. Ik luister veel naar pop en punk.',
-          'Lisa, 19, uit Leiden. Ik zing soul en pop en speel een beetje piano. Ik heb drie jaar in een koor gezongen.'] },
-      wil: { tips: ['Wat wil je: optreden, eigen nummers maken of vooral samen spelen?', 'Hoe serieus pak je het aan? Hoeveel tijd heb je per week?', 'Zeg het eerlijk. Dan vind je mensen die hetzelfde willen.'],
-        vb: ['Ik wil in een band die eigen nummers maakt en optreedt. Ik oefen elke dag en heb tijd voor één repetitie per week.',
-          'Ik wil beter worden door samen te spelen. Optreden mag later, als ik er klaar voor ben.',
-          'Ik wil een paar keer per maand zingen, en val ook in bij een band.'] },
-      zoek: { tips: ['Welk instrument zoek je, en welk niveau?', 'Vertel ook hoe je met anderen omgaat. Dat telt net zo zwaar als iemands niveau.', 'Wat vraag je van iemand: elke week komen, thuis oefenen, meedenken over nummers?'],
-        vb: ['Een bassist en een drummer om samen een band te beginnen. Je speelt minstens een jaar en komt afspraken na.',
-          'Andere beginners die samen willen oefenen. Je hoeft nog niet goed te zijn: we leren van elkaar.',
-          'Een gitarist of pianist om samen covers te spelen. Je luistert goed en zegt eerlijk wat je vindt.'] },
-      zoekBeschikbaar: { tips: ['Wat voor band zoek je: welke muziek, welke leeftijd, welk niveau?', 'Wat heb je te bieden? Denk ook aan een eigen versterker of een plek om te oefenen.', 'Bij wat voor groep pas je: rustig, gezellig of fanatiek?'],
-        vb: ['Een rockband met eigen nummers, met muzikanten tussen 16 en 20. Ik heb een eigen versterker en denk graag mee over nummers.',
-          'Een band van beginners die geduld heeft. Ik kom elke week en oefen thuis.',
-          'Een coverband of een groep die soms een zangeres nodig heeft. Ik leer snel nieuwe nummers.'] },
-      waar: { tips: ['Noem de dagen waarop je kunt, en hoe ver je wilt reizen.', 'Heb je een plek om te oefenen, of zoek je die nog?', 'Zijn er kosten die je wilt delen, zoals de huur van een oefenruimte? Zeg het meteen.'],
-        vb: ['Ik kan op zaterdag en zondag. Met de fiets of de tram kom ik overal in Den Haag.',
-          'Ik kan op woensdagmiddag en in het weekend, in Rijswijk of Delft. Een oefenruimte heb ik nog niet.',
-          'Ik kan op doordeweekse avonden, in Leiden en omgeving. De huur van een oefenruimte deel ik graag.'] },
-      verder: { tips: ['Een keer samen spelen zegt meer dan veel berichten.', 'Stel een kleine eerste stap voor, zoals één nummer samen spelen.', 'Hou het contact eerst via de app. Later kun je je e-mailadres of telefoonnummer nog geven.', 'Zet hier ook wat al vaststaat of wat je zelf meeneemt.'],
-        vb: ['Eerst een bericht hier in de app. Daarna een keer samen spelen, zonder verplichtingen. Ik heb een eigen gitaar en versterker.',
-          'Op mijn profiel staat een filmpje. Daarna spreken we af om één nummer samen te spelen. In de zomervakantie ben ik drie weken weg.',
+      wie: { tips: ['Wat speel je, en hoe lang al?', 'Hoe oud ben je ongeveer, en in welke plaats woon je?', 'Van welke artiesten of bands ben je fan? Dat zegt vaak al veel.', 'Staat er een filmpje of opname in Je mediahoek? Dan hoort iemand meteen hoe je klinkt.'],
+        vb: ['Ik ben Colin, 17, uit Den Haag. Ik speel al vier jaar gitaar, vooral rock en indie. Arctic Monkeys en Royal Blood draai ik grijs.',
+          'Ik ben Dylan, 15, en ik woon in Rijswijk. Ik drum sinds een jaar en heb les op de muziekschool. Pop en punk vind ik het leukst.',
+          'Ik ben Lisa, 19, uit Leiden. Ik zing soul en pop en speel een beetje piano. Ik heb drie jaar in een koor gezongen.'] },
+      wil: { tips: ['Waar heb je zin in: optreden, eigen nummers maken of gewoon lekker samen spelen?', 'Hoeveel tijd heb je ervoor, naast school of werk?', 'Hoe eerlijker je het vertelt, hoe makkelijker je mensen vindt die er net zo in staan.'],
+        vb: {
+          band: ['Ik zou graag in een band spelen die eigen nummers maakt. Optreden lijkt me echt gaaf. Ik oefen veel en heb tijd voor één repetitie per week.',
+            'Ik zou het leuk vinden om in een band te spelen en samen beter te worden. Optreden mag later, als we er klaar voor zijn.',
+            'Ik zing graag in een band, met covers of eigen nummers. Eén keer per week repeteren past goed bij mij.'],
+          jammen: ['Ik heb zin om gewoon een keer te jammen, zonder vaste afspraken. Lekker spelen en kijken waar het heen gaat.',
+            'Ik wil graag vaker samen spelen, want alleen thuis drummen is best saai. Een keer jammen met anderen lijkt me heel leuk.',
+            'Ik zou het leuk vinden om af en toe te jammen. Een paar nummers samen spelen en zingen, zonder druk.'],
+          invallen: ['Ik val graag in als een band een gitarist mist. Ik leer nummers vrij snel en sta graag op een podium.',
+            'Ik zou graag een keer invallen, om ervaring op te doen. Als het eerst bij een repetitie kan, vind ik dat fijn.',
+            'Ik val graag in als zangeres, bij een optreden of een repetitie. Met een setlist vooraf oefen ik de nummers thuis.'],
+          projecten: ['Ik zou graag meedoen aan een project, zoals een opname of een optreden op een festival. Iets met een begin en een eind.',
+            'Een kort project lijkt me een mooie eerste stap, bijvoorbeeld een paar nummers opnemen voor school.',
+            'Ik doe graag mee aan een los project, zoals een opname of een avond met covers. Ik zing ook graag de tweede stem.'] } },
+      zoek: { tips: ['Wie zou je graag tegenkomen: welk instrument, en ongeveer welk niveau?', 'Een goede klik is net zo belangrijk als goed spelen. Wat voor iemand past bij jou?', 'Wat vind je fijn: elke week afspreken, of af en toe?'],
+        vb: {
+          band: ['Een bassist en een drummer om samen een band te beginnen. Het fijnst is als je al een tijdje speelt en net zoveel zin hebt als ik.',
+            'Andere beginners die ook een band willen. Je hoeft nog niet goed te zijn; we leren het samen.',
+            'Een gitarist of pianist om een band mee te beginnen. Als je goed luistert en eerlijk zegt wat je vindt, klikt het vast.'],
+          jammen: ['Mensen om een keer mee te jammen, een drummer of een bassist bijvoorbeeld. Niveau maakt niet zoveel uit, plezier wel.',
+            'Iemand die het leuk vindt om rustig samen te spelen. Een gitarist of bassist die ook nog leert, zou top zijn.',
+            'Een gitarist of pianist om af en toe mee te jammen. Een paar bekende nummers samen spelen lijkt me al heel leuk.'],
+          invallen: ['Iemand die bij een optreden in maart op drums wil invallen. Het gaat om tien nummers die we vooraf samen doornemen.',
+            'Een gitarist die een paar keer wil invallen bij ons schoolbandje. Zo horen we hoe het samen klinkt.',
+            'Iemand die bij een paar optredens op piano wil invallen. De nummers krijg je van tevoren, zodat je rustig kunt oefenen.'],
+          projecten: ['Een drummer om een paar eigen nummers mee op te nemen. Het is een project van een paar weken.',
+            'Een bassist en een gitarist voor een schoolproject. We spelen samen twee nummers op de eindavond.',
+            'Een gitarist voor een klein project: een paar covers opnemen en online zetten.'] } },
+      zoekBeschikbaar: { tips: ['Wat voor groep zou je leuk vinden: welke muziek, welke leeftijd, welk niveau?', 'Wat breng je mee? Denk aan een eigen versterker of een plek om te oefenen.', 'Bij wat voor sfeer voel je je thuis: rustig, gezellig of fanatiek?'],
+        vb: {
+          band: ['Een band die eigen nummers maakt, met muzikanten tussen 16 en 20. Ik heb een eigen versterker en denk graag mee over nummers.',
+            'Een band met beginners die geduld heeft. Ik kom elke week en oefen thuis.',
+            'Een band die een zangeres zoekt, het liefst met soul of pop. Ik leer snel nieuwe nummers.'],
+          jammen: ['Een paar muzikanten om af en toe mee te jammen. Rock of indie vind ik het leukst, maar ik sta overal voor open.',
+            'Mensen die het leuk vinden om samen te jammen, ook als het nog niet perfect klinkt.',
+            'Een gitarist of pianist om samen te jammen, zonder vaste afspraken. Soul en pop vind ik het leukst.'],
+          invallen: ['Bands die soms een gitarist missen. Bij een optreden of repetitie val ik graag in.',
+            'Een band waar ik af en toe mag invallen, om ervaring op te doen. Ik leer de nummers graag thuis van tevoren.',
+            'Bands die soms een zangeres nodig hebben, voor een repetitie of een optreden.'],
+          projecten: ['Een leuk project, zoals een opname of een optreden op een festival. Ik denk graag mee over de nummers en heb een eigen versterker.',
+            'Een project om ervaring op te doen, bijvoorbeeld een opname of een schoolavond. Ik oefen thuis elke dag, dus ik ben er klaar voor.',
+            'Een project waarvoor een zangeres nodig is, zoals een opname of een themavond. Ik zing ook graag de tweede stem.'] } },
+      waar: { tips: ['Op welke dagen kun je meestal, en hoe ver wil je reizen?', 'Heb je een favoriete plek om te oefenen, of zoek je die nog?', 'Zijn er kosten, zoals de huur van een oefenruimte? Dan is het fijn om dat meteen te weten.'],
+        vb: ['Ik kan meestal op zaterdag en zondag. Met de fiets of de tram kom ik overal in Den Haag.',
+          'Woensdagmiddag en in het weekend kan ik het best. Rijswijk of Delft is voor mij makkelijk te bereiken. Een oefenruimte heb ik nog niet.',
+          'Ik kan vaak op doordeweekse avonden, in Leiden en omgeving. Als we een oefenruimte huren, deel ik de kosten graag.'] },
+      verder: { tips: ['Een keer samen spelen zegt vaak meer dan veel berichten.', 'Een kleine eerste stap werkt goed, zoals één nummer samen spelen.', 'Het is fijn om het contact eerst via de app te houden. Je e-mailadres of telefoonnummer kun je later nog geven.', 'Is er iets wat al vaststaat, of iets wat je zelf meeneemt? Dan kun je dat hier kwijt.'],
+        vb: ['Lijkt het je leuk? Stuur gerust een berichtje hier in de app. Misschien kunnen we dan een keer samen spelen en kijken of het klikt. Mijn gitaar en versterker neem ik zelf mee.',
+          'Op mijn profiel staat een filmpje van mij achter het drumstel. Lijkt het je leuk, dan spelen we misschien een keer één nummer samen. In de zomervakantie ben ik drie weken weg.',
           'Ik kom graag een keer langs bij een repetitie. Na afloop kijken we samen of het klikt. Ik kan ook de tweede stem zingen.'] }
     }
   }
@@ -644,8 +697,13 @@ function pbVakInhoud(sleutel) {
   const set = PB_VOORBEELDEN[soort];
   const vak = set.vakken[soort === 'ik' && sleutel === 'zoek' && f.soort === 'beschikbaar' ? 'zoekBeschikbaar' : sleutel];
   const tips = vak.tips.concat(sleutel === 'verder' && pbEersteAfspraakTonen() ? [PB_TIPS.eersteAfspraak] : []);
-  return { tips, vb: vak.vb, wie: set.wie };
+
+  const doel = (f.doelen || []).find(d => vak.vb[d]) || 'band';
+  return { tips, vb: Array.isArray(vak.vb) ? vak.vb : vak.vb[doel], wie: set.wie, alle: pbAlleVoorbeelden(vak) };
 }
+
+
+function pbAlleVoorbeelden(vak) { return Array.isArray(vak.vb) ? vak.vb : Object.values(vak.vb).flat(); }
 
 function pbLeesDitEerst() {
   voorbeeldBladOpen('Lees dit eerst', `<ol class="pb-tips">${PB_LEES_DIT_EERST.map(([k, t]) => `<li><strong>${escHtml(k)}.</strong> ${escHtml(t)}</li>`).join('')}</ol>`);
@@ -688,7 +746,8 @@ async function pbPlaatsenStart(vanBand) {
   await pbMijLaden();
   pbForm = pbLegeForm();
   pbVanBand = vanBand || null;
-  if (pbVanBand) { pbForm.wie = pbVanBand.band_id; pbForm.doelen = ['band']; pbForm.instrumenten = pbVanBand.instrumenten.slice(); }
+  if (pbVanBand) { pbForm.wie = pbVanBand.band_id; pbForm.doelen = ['band']; pbForm.instrumenten = pbVanBand.instrumenten.slice(0, 1); }
+  pbEigenPlaats(pbForm);
   pbLaag = 'plaatsen';
   pbTekenForm();
   pbToonLaag();
@@ -708,11 +767,24 @@ function pbFormKnopTekst(f) {
   if (f.id) return 'Opslaan';
   return f.kaderGezien ? 'Toch plaatsen' : 'Oproep plaatsen';
 }
+
+
+
+function pbAutoPlaats(f) {
+  const band = f.wie !== 'ik' ? pbBeheerdeBands().find(b => b.id === f.wie) : null;
+  return ((band ? band.city : PB_MIJ.plaats) || '').trim();
+}
+function pbEigenPlaats(f) {
+  if (f.id || (f.plaats.trim() && f.plaats.trim() !== f.autoPlaats)) return;
+  f.autoPlaats = pbAutoPlaats(f);
+  f.plaats = f.autoPlaats;
+}
+function pbIsEigenPlaats(f) { return !f.id && !!f.autoPlaats && f.plaats.trim() === f.autoPlaats; }
 function pbFormHeeftInvoer() {
   if (!pbForm) return false;
   const f = pbForm;
   if (f.id) return pbFormSleutel(f) !== f.begin;
-  return !!(f.leeftijden.length || f.genres.length || f.plaats.trim() || f.straal || PB_VAK_SLEUTELS.some(k => (f.vakken[k] || '').trim())
+  return !!(f.leeftijden.length || f.genres.length || (f.plaats.trim() && !pbIsEigenPlaats(f)) || f.straal || PB_VAK_SLEUTELS.some(k => (f.vakken[k] || '').trim())
     || (!pbVanBand && (f.doelen.length || f.instrumenten.length)));
 }
 
@@ -730,14 +802,8 @@ function pbBeheerdeBands() { return (PB_MIJ.bands || []); }
 
 
 
-
-const PB_VANAF_19 = ['19-24', '25-34', '35+'];
 function pbMijnLeeftijd() { return PB_MIJ.leeftijd == null ? 99 : PB_MIJ.leeftijd; }
-function pbLeeftijdenVoorOpslaan(f) {
-  const g = f.leeftijden.slice();
-  if (g.length && pbMijnLeeftijd() >= 19 && !g.some(x => PB_VANAF_19.includes(x))) g.push(...PB_VANAF_19);
-  return PB_LEEFTIJDEN.filter(x => g.includes(x));
-}
+function pbLeeftijdenVoorOpslaan(f) { return PB_LEEFTIJDEN.filter(x => f.leeftijden.includes(x)); }
 function pbGroepen() {
   const l = pbMijnLeeftijd();
   if (l < 16) return ['13-15', '16-18'];
@@ -783,7 +849,7 @@ function pbTekenForm() {
     ${pbKeuzeveldHTML('pbFInstrument', 'Instrument', 'pbVeldInstrument')}
     ${pbHeeftZang(f.instrumenten) ? pbZangVeldHTML(f) : ''}
     ${pbKeuzeveldHTML('pbFGenre', 'Genre', 'pbVeldGenre')}
-    ${pbKeuzeveldHTML('pbFLeeftijden', 'Leeftijden die je oproep zien', 'pbVeldLeeftijden')}
+    ${pbKeuzeveldHTML('pbFLeeftijden', 'Welke leeftijd zoek je?', 'pbVeldLeeftijden')}
     <div class="field" id="pbVeldPlaats"><div class="filter-row-city">
       <div class="city-search-wrap frc-plaats"><label for="pbFPlaats">Plaats</label>
         <input type="text" id="pbFPlaats" placeholder="Bijv. Den Haag" autocomplete="off" value="${escHtml(f.plaats)}" oninput="pbForm.plaats=this.value; clearFieldError(this)"></div>
@@ -836,7 +902,7 @@ function pbFormVelden() {
     ververs: () => pbVeldTekst('pbFDoel', pbDoelenTekst(f.doelen), 'Band · Jammen · Invallen…')
   });
   initChoiceField({
-    id: 'pbFInstrument', fieldId: 'pbFInstrumentField', menuId: 'pbFInstrumentMenu', meer: true,
+    id: 'pbFInstrument', fieldId: 'pbFInstrumentField', menuId: 'pbFInstrumentMenu',
     rijen: () => instrKeuzes().map(t => ({ t, gekozen: t === 'Elk instrument' ? f.elk : f.instrumenten.includes(t) })),
     kies: (i) => { pbKiesInstrument(instrKeuzes()[i]); },
     ververs: () => pbVeldTekst('pbFInstrument', f.elk ? 'Elk instrument' : f.instrumenten.join(', '), 'Kies een instrument')
@@ -859,7 +925,7 @@ function pbFormVelden() {
     id: 'pbFLeeftijden', fieldId: 'pbFLeeftijdenField', menuId: 'pbFLeeftijdenMenu', meer: true,
     rijen: () => groepen.map(g => ({ t: g + ' jaar', gekozen: f.leeftijden.includes(g) })),
     kies: (i) => { pbKiesLeeftijd(groepen[i]); },
-    ververs: () => pbVeldTekst('pbFLeeftijden', PB_LEEFTIJDEN.filter(g => f.leeftijden.includes(g)).join(', ') + (f.leeftijden.length ? ' jaar' : ''), 'Kies leeftijden')
+    ververs: () => pbVeldTekst('pbFLeeftijden', PB_LEEFTIJDEN.filter(g => f.leeftijden.includes(g)).join(', ') + (f.leeftijden.length ? ' jaar' : ''), 'Elke leeftijd')
   });
 
 
@@ -881,7 +947,7 @@ function pbVeldTekst(id, tekst, leeg) {
 
 function pbKies(naam, w) {
   const f = pbForm;
-  if (naam === 'wie') { f.wie = w; if (w !== 'ik') { f.soort = 'gezocht'; } }
+  if (naam === 'wie') { f.wie = w; if (w !== 'ik') { f.soort = 'gezocht'; } pbEigenPlaats(f); }
   if (naam === 'soort') { f.soort = w; f.instrumenten = []; f.elk = false; f.zangVorm = ''; if (w === 'beschikbaar') f.media = false; }
   const y = window.scrollY;
   pbTekenForm();
@@ -891,8 +957,9 @@ function pbKies(naam, w) {
 function pbKiesInstrument(w) {
   const f = pbForm;
   const zangVoor = pbHeeftZang(f.instrumenten);
-  if (w === 'Elk instrument') { f.elk = !f.elk; if (f.elk) f.instrumenten = []; }
-  else { f.elk = false; f.instrumenten = f.instrumenten.includes(w) ? f.instrumenten.filter(x => x !== w) : f.instrumenten.concat(w); }
+
+  if (w === 'Elk instrument') { f.elk = true; f.instrumenten = []; }
+  else { f.elk = false; f.instrumenten = [w]; }
   refreshChoiceField('pbFInstrument');
   clearFieldError(document.getElementById('pbFInstrumentField'));
   f.dubbel = false;
@@ -919,12 +986,13 @@ function pbFormFouten() {
   const fouten = [];
   if (!f.doelen.length) fouten.push(['pbFDoelField', 'Kies waarvoor']);
   if (!f.elk && !f.instrumenten.length) fouten.push(['pbFInstrumentField', 'Kies een instrument']);
+
+  else if (f.instrumenten.length > 1) fouten.push(['pbFInstrumentField', 'Kies één instrument']);
   if (pbHeeftZang(f.instrumenten) && !f.zangVorm) fouten.push(['pbFZangField', f.soort === 'beschikbaar' ? 'Kies zanger of zangeres' : 'Kies zanger, zangeres of allebei']);
-  if (!f.leeftijden.length) fouten.push(['pbFLeeftijdenField', 'Kies minstens één leeftijd']);
   PB_VAK_SLEUTELS.forEach(k => {
     const t = (f.vakken[k] || '').trim();
     if (t.length > PB_VAK_MAX) fouten.push(['pbVak-' + k, `Maak deze tekst korter: hoogstens ${PB_VAK_MAX} tekens`]);
-    else if (t && pbVakInhoud(k).vb.includes(t)) fouten.push(['pbVak-' + k, f.wie !== 'ik' ? 'Pas het voorbeeld aan, zodat het over jullie gaat' : 'Pas het voorbeeld aan, zodat het over jou gaat']);
+    else if (t && pbVakInhoud(k).alle.includes(t)) fouten.push(['pbVak-' + k, f.wie !== 'ik' ? 'Pas het voorbeeld aan, zodat het over jullie gaat' : 'Pas het voorbeeld aan, zodat het over jou gaat']);
   });
   return fouten;
 }
@@ -977,7 +1045,7 @@ async function pbNaarVoorbeeld() {
   const fouten = pbFormFouten();
 
   f.lat = null; f.lng = null;
-  if (f.plaats.trim()) {
+  if (f.plaats.trim() && !pbIsEigenPlaats(f)) {
     const o = await resolveSearchOrigin(f.plaats);
     if (o.fout) { showToast(friendlyErrorMessage(null, 'je plaats opzoeken')); return; }
     if (o.lat == null) fouten.push(['pbFPlaats', 'Deze plaats herkennen we niet.']);
@@ -1003,7 +1071,9 @@ async function pbNaarVoorbeeld() {
     return;
   }
   document.getElementById('pbVoorbeeldInhoud').innerHTML = pbOproepHTML(pbVoorbeeldOproep(), true);
-  document.getElementById('pbPlaatsenKnop').textContent = f.id ? 'Opslaan' : 'Plaatsen';
+
+
+  document.getElementById('pbPlaatsenKnop').textContent = 'Plaatsen';
   pbLaag = 'voorbeeld';
   pbToonLaag();
 }
@@ -1014,7 +1084,7 @@ async function pbPlaatsen() {
   const p = {
     soort: f.soort, doelen: o.doelen, instrumenten: f.instrumenten, elk_instrument: f.elk, zang_vorm: o.zang_vorm, genres: o.genres,
     leeftijden: o.leeftijden, vakken: o.vakken, media_gewenst: f.media,
-    plaats: f.plaats.trim(), lat: f.lat, lng: f.lng, straal_km: f.straal
+    plaats: pbIsEigenPlaats(f) ? '' : f.plaats.trim(), lat: f.lat, lng: f.lng, straal_km: f.straal
   };
   if (f.wie !== 'ik') p.band_id = f.wie;
 
@@ -1041,6 +1111,7 @@ async function pbPlaatsen() {
 
 
 function pbVraagOproepVoorRol(bandId, instrumenten) {
+  instrumenten = instrumenten.slice(0, 1);
   const band = (PB_MIJ.bands || []).find(b => b.id === bandId);
   const naam = band ? band.name : 'jullie band';
   const wie = pbSpelers(instrumenten, false).toLowerCase();
@@ -1074,6 +1145,7 @@ function pbMijnTekenen() {
   if (!pbMijn.length) { vak.innerHTML = emptyStateHTML('Nog geen oproepen', 'Zoek je iemand, of ben je beschikbaar?'); return; }
   vak.innerHTML = pbMijn.map(pbMijnHTML).join('');
   pbTitelsPassen(vak);
+  pbRasterPassen(vak);
 }
 
 
@@ -1087,6 +1159,19 @@ function pbVerlengTekst(o) {
 }
 
 
+
+
+function pbRasterPassen(root) {
+  (root || document).querySelectorAll('.pb-knoppen-raster').forEach(r => {
+    const knoppen = [...r.children];
+    knoppen.forEach(b => b.classList.remove('pb-knop-vol'));
+    const past = b => b.scrollWidth <= b.clientWidth && b.getBoundingClientRect().height <= 46;
+    for (let i = knoppen.length % 2; i < knoppen.length; i += 2) {
+      const paar = knoppen.slice(i, i + 2);
+      if (paar.some(b => !past(b))) paar.forEach(b => b.classList.add('pb-knop-vol'));
+    }
+  });
+}
 function pbKnoppenRaster(knoppen) {
   return `<div class="pb-mijn-knoppen pb-knoppen-raster">${knoppen.join('')}</div>`;
 }
@@ -1132,6 +1217,8 @@ function pbMijnKlap(id) {
 
 
 
+
+
 function pbReactieHTML(o, r) {
   const wie = [r.leeftijd != null ? r.leeftijd + ' jaar' : '', afstandTekst(r.km)].filter(Boolean).map(escHtml).join(' · ');
   const rechts = r.status === 'uitgenodigd'
@@ -1155,6 +1242,7 @@ function pbReactieHTML(o, r) {
         ${extra ? `<p class="pb-extra">${escHtml(extra)}</p>` : ''}
         ${r.boodschap ? `<div class="pb-ballon"><div class="message-bubble other">${escHtml(r.boodschap)}<span class="message-bubble-time">${escHtml(wanneer)}</span></div></div>` : ''}
         <button type="button" class="stille-link pb-profiel" onclick="event.stopPropagation(); openProfielScherm('${jsAttr(r.musician_id)}')">Profiel bekijken</button>
+        ${r.status === 'uitgenodigd' ? `<button type="button" class="btn btn-ghost pb-gesprek-knop" onclick="event.stopPropagation(); openMessageComposer('${jsAttr(r.musician_id)}','${jsAttr(r.naam)}')">Naar het gesprek</button>` : ''}
       </div>` : ''}
     </div>`;
 }
@@ -1330,6 +1418,7 @@ function pbReactiesTekenen() {
       </div>`;
   }).join('');
   pbTitelsPassen(vak);
+  pbRasterPassen(vak);
 }
 function pbReactieKlap(id) { pbReactieOpen = pbReactieOpen === id ? null : id; pbReactiesTekenen(); }
 

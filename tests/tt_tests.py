@@ -21974,11 +21974,11 @@ S.data.prikbord_zoek = [];
     check("TT-695: onder de 16 kies je 13-15 en 16-18 (niet meer 16-17)", u["g15"] == ["13-15 jaar", "16-18 jaar"], j(u["g15"]))
     check("TT-695: met 18 kies je alle vijf groepen, ook 13-15", u["g18"] == ["13-15 jaar", "16-18 jaar", "19-24 jaar", "25-34 jaar", "35+ jaar"], j(u["g18"]))
     check("TT-695: met 19 staat 13-15 er niet bij", u["g19"] == ["16-18 jaar", "19-24 jaar", "25-34 jaar", "35+ jaar"], j(u["g19"]))
-    check("TT-695: geen extra melding voor 19+ (besluit Ronald 23-11-2026, sessie 203: \"nee … waarom de keuzestress toevoegen?\"); niets gekozen: de gewone melding",
-          u["fout19a"] is None and u["fout19b"] == "Kies minstens één leeftijd" and u["fout19c"] is None and u["fout18"] == "Kies minstens één leeftijd",
+    check("TT-396 sessie 235 ad 3: de leeftijd is niet verplicht; geen melding bij niets gekozen, ook niet met 18 of 19 (besluit Ronald 28-11-2026: \"ja\")",
+          u["fout19a"] is None and u["fout19b"] is None and u["fout19c"] is None and u["fout18"] is None,
           j([u["fout19a"], u["fout19b"], u["fout19c"], u["fout18"]]))
-    check("TT-695: kiest iemand van 19 alleen 16-18, dan komen de groepen vanaf 19 erbij, ook in het voorbeeld; met 18 niet (besluiten Ronald sessie 202 ad 2 en 203)",
-          u["opslaan19"] == ["16-18", "19-24", "25-34", "35+"] and u["voorbeeld19"] == u["opslaan19"] and u["opslaan18"] == ["16-18"],
+    check("TT-396 sessie 235 ad 3: de app zet er bij 19+ geen leeftijden meer bij; wat je kiest, staat in het voorbeeld (vervangt sessie 202 ad 2 en 203)",
+          u["opslaan19"] == ["16-18"] and u["voorbeeld19"] == u["opslaan19"] and u["opslaan18"] == ["16-18"],
           j([u["opslaan19"], u["voorbeeld19"], u["opslaan18"]]))
     check("TT-396 (8D sessie 203): Aanpassen geeft het id van de oproep mee, zodat de database de bestaande oproep wijzigt", u["aanpassenId"] == "o9", j(u["aanpassenId"]))
     check("TT-695: een oude oproep met 13-15 aanpassen met 19: 13-15 valt weg", u["aanpassen19"] == ["16-18", "19-24"], j(u["aanpassen19"]))
@@ -22074,7 +22074,11 @@ S.data.prikbord_zoek = [];
           });
           // --- De oproep: de vakken met kop, een leeg vak staat er niet ---
           pbOpenOproep('o1'); await w(300);
-          u.oproep = { koppen: [...document.querySelectorAll('#pbOproepInhoud .pb-vak-kop')].map(tekst), regel: tekst(document.querySelectorAll('#pbOproepInhoud .result-row-meta')[0]) };
+          u.oproep = { koppen: [...document.querySelectorAll('#pbOproepInhoud .pb-vak-kop')].map(tekst), regel: tekst(document.querySelectorAll('#pbOproepInhoud .result-row-meta')[0]),
+            waarvoor: tekst(document.querySelector('#pbOproepInhoud .pb-waarvoor')),
+            waarvoorEen: (() => { const p = document.querySelector('#pbOproepInhoud .pb-waarvoor'); return !!p && Math.round(p.getBoundingClientRect().height) === parseFloat(getComputedStyle(p).lineHeight); })(),
+            waarvoorBoven: (() => { const p = document.querySelector('#pbOproepInhoud .pb-waarvoor'), k = document.querySelector('#pbOproepInhoud .pb-vak-kop'); return !!p && !!k && p.getBoundingClientRect().bottom <= k.getBoundingClientRect().top; })(),
+            waarvoorAfstand: (() => { const p = document.querySelector('#pbOproepInhoud .pb-waarvoor'); return p ? Math.round(p.getBoundingClientRect().top - document.querySelector('#pbOproepInhoud .pb-oproep-kop').getBoundingClientRect().bottom) : null; })() };
           pbTerug(); await w(200);
           // --- Het invulscherm ---
           PB_MIJ.leeftijd = 19;
@@ -22092,6 +22096,20 @@ S.data.prikbord_zoek = [];
             soortBreed: (() => { const r = f.querySelector('.pb-keuzes[data-naam="soort"]'); return Math.round(r.getBoundingClientRect().width) === Math.round(r.parentElement.getBoundingClientRect().width); })(),
             zangVoor: !!$('pbVeldZang'), afstand: tekst(document.querySelector('#pbFAfstandField .wheel-field-label'))
           };
+          // Sessie 235: het leeftijdsveld (informatie, niet verplicht), je eigen plaats vooraf, één instrument per oproep.
+          u.form.leeftijd = [tekst(document.querySelector('#pbVeldLeeftijden label')), tekst(document.querySelector('#pbFLeeftijdenField .wheel-field-label'))];
+          u.form.plaats = [$('pbFPlaats').value, PB_MIJ.plaats, pbFormHeeftInvoer()];
+          $('pbFInstrumentField').click(); await w(80);
+          u.form.instrMenu = { open: actiefKeuzeMenu, meer: $('pbFInstrumentMenu').getAttribute('aria-multiselectable') };
+          document.querySelectorAll('#pbFInstrumentMenu [role="option"]')[2].click(); await w(80);
+          u.form.instrNa1 = { dicht: actiefKeuzeMenu === null, gekozen: pbForm.instrumenten.slice(), elk: pbForm.elk };
+          pbKiesInstrument('Basgitaar'); pbKiesInstrument('Elk instrument');
+          u.form.instrElk = { gekozen: pbForm.instrumenten.slice(), elk: pbForm.elk, tekst: tekst(document.querySelector('#pbFInstrumentField .wheel-field-label')) };
+          pbKiesInstrument('Drums');
+          u.form.instrDrums = { gekozen: pbForm.instrumenten.slice(), elk: pbForm.elk };
+          pbForm.instrumenten = ['Drums', 'Basgitaar'];
+          u.form.instrTwee = (pbFormFouten().find(x => x[0] === 'pbFInstrumentField') || [])[1] || null;
+          pbForm.instrumenten = [];
           // Meer keuzes bij Waarvoor; zanger of zangeres alleen bij zang; genre hoogstens 3.
           CHOICE_FIELDS.pbFDoel.kies(0); CHOICE_FIELDS.pbFDoel.kies(1);
           u.form.waarvoorGekozen = tekst(document.querySelector('#pbFDoelField .wheel-field-label'));
@@ -22180,13 +22198,21 @@ S.data.prikbord_zoek = [];
           const open = kand()[0];
           u.mijn.open = { extra: tekst(open.querySelector('.pb-extra')), bericht: tekst(open.querySelector('.message-bubble')), profiel: tekst(open.querySelector('.pb-profiel')),
             nieuwWeg: !open.querySelector('.pb-nieuw'), gezien: S.calls.filter(c => c.name === 'tt_reactie_gezien').length - gezienVoor,
-            vakLinks: Math.round(open.querySelector('.pb-kandidaat-vak').getBoundingClientRect().left - open.getBoundingClientRect().left) };
+            vakLinks: Math.round(open.querySelector('.pb-kandidaat-vak').getBoundingClientRect().left - open.getBoundingClientRect().left),
+            gesprekMila: !!open.querySelector('.pb-gesprek-knop') };
+          // Sessie 235 ad 2 (B): bij een uitgenodigde kandidaat de knop Naar het gesprek, over de breedte van zijn vak.
+          pbKandidaatKlap('r2', 'o9'); await w(200);
+          { const tom = kand()[1], k = tom.querySelector('.pb-gesprek-knop'), vak = tom.querySelector('.pb-kandidaat-vak'), pr = tom.querySelector('.pb-profiel');
+            u.mijn.gesprekTom = k ? { tekst: tekst(k), soort: k.className, hoog: Math.round(k.getBoundingClientRect().height),
+              breed: Math.round(k.getBoundingClientRect().width) === Math.round(vak.getBoundingClientRect().width), onder: Math.round(k.getBoundingClientRect().top - pr.getBoundingClientRect().bottom),
+              actie: k.getAttribute('onclick') } : null; }
           pbMijnKlap('o8'); await w(100);
           u.mijn.eenOpen = document.querySelectorAll('#pbMijnLijst .pb-kaart-oproep.open').length;
           u.mijn.verlengenVroeg = [...document.querySelectorAll('#pbMijn-o8 .pb-mijn-knoppen .btn')].map(tekst);
           // Deel 4: in de laatste 10 dagen "Verlengen kan nu" en vier knoppen 2x2 (Oproep bekijken, Verlengen / Aanpassen, Verwijderen).
           pbMijn.find(m => m.oproep.id === 'o8').oproep.loopt_tot = new Date(Date.now() + 5 * 864e5).toISOString(); pbMijnTekenen(); await w(100);
           u.mijn.verlengenO8 = [...document.querySelectorAll('#pbMijn-o8 .pb-mijn-knoppen .btn')].map(b => [tekst(b), b.disabled, (b.getBoundingClientRect().width > b.parentElement.getBoundingClientRect().width * 0.75)]);
+          u.mijn.hoogO8 = [...document.querySelectorAll('#pbMijn-o8 .pb-mijn-knoppen .btn')].map(b => Math.round(b.getBoundingClientRect().height));
           u.mijn.rijenO8 = [...new Set([...document.querySelectorAll('#pbMijn-o8 .pb-mijn-knoppen .btn')].map(b => Math.round(b.getBoundingClientRect().top)))].length;
           u.mijn.rechtsO8 = tekst(document.querySelector('#pbMijn-o8 .pb-rechts'));
           S.rpcResults.tt_oproep_verlengen = () => new Date(Date.now() + 60 * 864e5).toISOString();
@@ -22218,7 +22244,8 @@ S.data.prikbord_zoek = [];
           pbReactieKlap('x2'); await w(100);
           u.reactieOpen = { bericht: tekst(document.querySelector('#pbReactiesLijst .pb-kaart-oproep.open .message-bubble.own')),
             knoppen: [...document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep.open .btn')].map(tekst),
-            breed: [...document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep.open .btn')].map(b => (b.getBoundingClientRect().width > b.parentElement.getBoundingClientRect().width * 0.75)) };
+            breed: [...document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep.open .btn')].map(b => (b.getBoundingClientRect().width > b.parentElement.getBoundingClientRect().width * 0.75)),
+            hoog: [...document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep.open .btn')].map(b => Math.round(b.getBoundingClientRect().height)) };
           pbReactieKlap('x3'); await w(100);
           u.reactieGesloten = document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep.open .btn').length;
           // Deel 4 (ad 5): "Oproep plaatsen" is de enige gele knop; een lege lijst zonder tweede gele knop.
@@ -22286,8 +22313,11 @@ S.data.prikbord_zoek = [];
           "Achtergrondzanger of achtergrondzangeres gezocht" in r and "Nachtploeg zoekt een drummer" in r, j(list(r)))
     check("TT-396 cluster 2: in de regel korten naam en instrument af; genre, leeftijd en afstand staan heel",
           r.get("Achtergrondzanger of achtergrondzangeres gezocht", {}).get("regel", "").endswith("Folk / Akoestisch · 15 jaar · 25 km"), j(r.get("Achtergrondzanger of achtergrondzangeres gezocht")))
-    check("TT-396 cluster 2: de oproep toont elk gevuld vak met zijn kop, een leeg vak niet; Waarvoor staat bij de genres",
-          u["oproep"]["koppen"] == ["Wie zijn we", "Wie zoeken we"] and u["oproep"]["regel"].startswith("Band · Rock · Punk"), j(u["oproep"]))
+    check("TT-396 cluster 2: de oproep toont elk gevuld vak met zijn kop, een leeg vak niet",
+          u["oproep"]["koppen"] == ["Wie zijn we", "Wie zoeken we"], j(u["oproep"]))
+    check("TT-396 sessie 235 ad 4: Waarvoor op één regel boven de vakken (\"Gezocht voor: band\"), 16 onder de kop; bovenin alleen de genres (besluit Ronald 28-11-2026: \"Ad 4. B\")",
+          u["oproep"]["regel"].startswith("Rock · Punk") and "Band" not in u["oproep"]["regel"] and u["oproep"]["waarvoor"] == "Gezocht voor: band"
+          and u["oproep"]["waarvoorEen"] and u["oproep"]["waarvoorBoven"] and u["oproep"]["waarvoorAfstand"] == 16, j(u["oproep"]))
     fm = u["form"]
     check("TT-396 cluster 2: geen toevoeging aan de kop en geen oud tekstvak (besluit Ronald 23-11-2026, sessie 202: \"ik wil de toevoeging aan de koptekst weg hebben\")",
           fm["toevoeging"] is False and fm["tekstvak"] is False, j(fm))
@@ -22296,6 +22326,14 @@ S.data.prikbord_zoek = [];
           and fm["leeg"] and fm["max"] == [600] * 5 and fm["lees"], j(fm))
     check("TT-396 cluster 2: Waarvoor zoek je een muzikant?, leeg \"Band · Jammen · Invallen…\", meer dan één keuze (sessie 205)",
           fm["waarvoor"] == ["Waarvoor zoek je een muzikant?", "Band · Jammen · Invallen…"] and fm["waarvoorGekozen"] == "Band · Jammen", j(fm))
+    check("TT-396 sessie 235 ad 3: het veld heet Welke leeftijd zoek je?, leeg Elke leeftijd (besluit Ronald 28-11-2026: \"ja\")",
+          fm["leeftijd"] == ["Welke leeftijd zoek je?", "Elke leeftijd"], j(fm["leeftijd"]))
+    check("TT-396 sessie 226 ad 4: je eigen plaats staat al ingevuld bij Oproep plaatsen; zonder wijziging telt hij niet als invoer (geen vraag bij terug)",
+          fm["plaats"][1] and fm["plaats"][0] == fm["plaats"][1] and fm["plaats"][2] is False, j(fm["plaats"]))
+    check("TT-396 sessie 226 ad 2 en 3: één instrument per oproep: het menu kiest één en sluit na de tik; Elk instrument blijft en vervangt; een oudere oproep met twee: \"Kies één instrument\"",
+          fm["instrMenu"]["open"] == "pbFInstrument" and fm["instrMenu"]["meer"] is None and fm["instrNa1"]["dicht"] and len(fm["instrNa1"]["gekozen"]) == 1
+          and fm["instrElk"] == {"gekozen": [], "elk": True, "tekst": "Elk instrument"} and fm["instrDrums"] == {"gekozen": ["Drums"], "elk": False}
+          and fm["instrTwee"] == "Kies één instrument", j([fm["instrMenu"], fm["instrNa1"], fm["instrElk"], fm["instrDrums"], fm["instrTwee"]]))
     check("TT-396 cluster 2: Gezocht · Beschikbaar over de hele breedte, even breed, letter 15 (sessie 206: \"ja. alleen de lettergrootte aanpassen\")",
           [x[0] for x in fm["soort"]] == ["Gezocht", "Beschikbaar"] and all(x[1] == "15px" for x in fm["soort"]) and fm["soort"][0][2] == fm["soort"][1][2] and fm["soortBreed"], j(fm["soort"]))
     check("TT-396 cluster 2: zanger of zangeres alleen bij zang: Zanger · Zangeres · Zanger of zangeres, en nodig (sessie 205)",
@@ -22309,11 +22347,13 @@ S.data.prikbord_zoek = [];
     check("TT-396 cluster 2: Voorbeelden in een blad met kruisje, tips en drie voorbeelden; bovenaan blijft het invulscherm zichtbaar (sessie 205: \"ik mis het sluitkruisje\")",
           u["blad"]["open"] and u["blad"]["kop"] == "Wie ben ik" and u["blad"]["kruisje"] and u["blad"]["kaarten"] == 3 and u["blad"]["tips"] >= 3 and u["blad"]["strook"] >= 72, j(u["blad"]))
     check("TT-396 cluster 2: Gebruik deze tekst zet het voorbeeld in het vak en sluit het blad; Dylan in een voorbeeld (sessie 206: \"Dylan in plaats van Noor\")",
-          u["gebruikt"][0].startswith("Dylan, 15, uit Rijswijk") and u["gebruikt"][1] is False, j(u["gebruikt"]))
+          u["gebruikt"][0].startswith("Ik ben Dylan, 15, en ik woon in Rijswijk") and u["gebruikt"][1] is False, j(u["gebruikt"]))
     check("TT-396 cluster 2: een ongewijzigd voorbeeld gaat niet door (sessie 205), in de ik-vorm", u["ongewijzigd"] == "Pas het voorbeeld aan, zodat het over jou gaat", j(u["ongewijzigd"]))
     check("TT-396 cluster 2: Lees dit eerst met zes punten, gecorrigeerd met de band erin (besluit Ronald 24-11-2026, sessie 208: \"ad 2. ja, gecorrigeerd met band\")",
           len(u["lees"]) == 6 and "Vraag een niveau dat bij jou of je band past, en zeg eerlijk wat jij of jullie willen bereiken." in u["lees"][0]
           and "Die is misschien ook wat zenuwachtig." in u["lees"][4], j(u["lees"]))
+    check("TT-396 sessie 235: Lees dit eerst punt 2 in de nieuwe toon (\"ad 2. ik weet niet wat je denkt, dus ik laat me verassen?\"); geen \"neutrale toon\" meer",
+          "Schrijf zoals je praat. Dan leest het fijn en reageren mensen die bij je passen." in u["lees"][1] and not any("neutrale" in x for x in u["lees"]), j(u["lees"]))
     check("TT-396 cluster 2: een plaats die de lijst niet kent, gaat niet door", "Deze plaats herkennen we niet." in u["plaatsFout"], j(u["plaatsFout"]))
     check("TT-396 cluster 2: bij lege vakken eerst het rode kader met de zin van Ronald, de knop wordt Toch plaatsen; de tweede tik plaatst (sessie 205: \"Een volledige oproep zorgt voor betere reacties.\")",
           u["kader"]["er"] and "Een volledige oproep zorgt voor betere reacties." in u["kader"]["tekst"] and u["kader"]["knop"] == "Toch plaatsen" and u["kader"]["laag"] == "plaatsen"
@@ -22333,12 +22373,16 @@ S.data.prikbord_zoek = [];
     check("TT-396 cluster 2: een kandidaat openen: grijs video en gezamenlijke nummers, zijn bericht met dag en tijd, Profiel bekijken, aan de linkerrand; Nieuw weg, ook in de database",
           mj["open"]["extra"] == "Video · 4 gezamenlijke nummers" and mj["open"]["bericht"].startswith("Hoi! Ik kan op vrijdag.") and "Vandaag" in mj["open"]["bericht"]
           and mj["open"]["profiel"] == "Profiel bekijken" and mj["open"]["nieuwWeg"] and mj["open"]["gezien"] == 1 and mj["open"]["vakLinks"] <= 12, j(mj["open"]))
+    check("TT-396 sessie 235 ad 2: een uitgenodigde kandidaat heeft open de knop Naar het gesprek (tweede knop, 44 hoog, over de breedte van zijn vak, 12 onder Profiel bekijken); een niet uitgenodigde niet (besluit Ronald 28-11-2026: \"ad 2. B\")",
+          mj["open"]["gesprekMila"] is False and (mj.get("gesprekTom") or {}).get("tekst") == "Naar het gesprek" and "btn-ghost" in mj["gesprekTom"]["soort"]
+          and mj["gesprekTom"]["hoog"] == 44 and mj["gesprekTom"]["breed"] and mj["gesprekTom"]["onder"] == 12 and "openMessageComposer('m5','Tom')" in mj["gesprekTom"]["actie"], j(mj.get("gesprekTom")))
     check("TT-396 deel 4: tot de laatste 10 dagen geen knop Verlengen; Oproep bekijken breed, Aanpassen en Verwijderen naast elkaar (besluiten Ronald 26-11-2026, sessie 221: \"dit moet 2x2 knoppen worden\", B); één oproep tegelijk open",
           [k[0] for k in mj["knoppen"]] == ["Oproep bekijken", "Aanpassen", "Verwijderen"] and [k[2] for k in mj["knoppen"]] == [True, False, False]
           and not any(k[1] for k in mj["knoppen"]) and mj["kolommen"] == 2 and mj["eenOpen"] == 1 and "Verlengen" not in mj["verlengenVroeg"], j(mj))
-    check("TT-396 deel 4: in de laatste 10 dagen \"Verlengen kan nu\" en vier knoppen 2x2: Oproep bekijken, Verlengen / Aanpassen, Verwijderen",
+    check("TT-396 deel 4 en sessie 235 ad 1 (360 breed): in de laatste 10 dagen \"Verlengen kan nu\"; Oproep bekijken past niet naast Verlengen, dus dat paar onder elkaar over de hele breedte, Aanpassen en Verwijderen naast elkaar; geen tekst op twee regels (besluit Ronald 28-11-2026: \"ad 1. optie A\")",
           mj["rechtsO8"] == "Verlengen kan nu" and [k[0] for k in mj["verlengenO8"]] == ["Oproep bekijken", "Verlengen", "Aanpassen", "Verwijderen"]
-          and not any(k[1] or k[2] for k in mj["verlengenO8"]) and mj["rijenO8"] == 2, j(mj))
+          and not any(k[1] for k in mj["verlengenO8"]) and [k[2] for k in mj["verlengenO8"]] == [True, True, False, False] and mj["rijenO8"] == 3
+          and mj["hoogO8"] == [44, 44, 44, 44], j(mj))
     check("TT-396 deel 4: de melding na Verlengen noemt geen datum (besluit Ronald 26-11-2026, sessie 221: \"ja,\")",
           mj["melding"] == "Verlengd. Je oproep staat weer bovenaan.", j(mj["melding"]))
     check("TT-396 deel 4 en 5: Oproep bekijken opent je oproep zoals hij online staat, zonder Bekijk de kandidaten (deel 5: \"ja, want die staan dan al in je lijst\"); terug naar Mijn Oproepen, de kaart nog open",
@@ -22358,9 +22402,9 @@ S.data.prikbord_zoek = [];
     check("TT-396 cluster 2: zonder kandidaten: Oproep verwijderen? en de knop kan meteen", wg["zonder"] == {"kop": "Oproep verwijderen?", "zin": "Er zijn geen reacties. Je oproep verdwijnt.", "knopAan": True, "keuzes": 0}, j(wg["zonder"]))
     check("TT-396 cluster 2 en deel 4: Mijn Reacties zonder datum, rechts Reactie verstuurd · Je bent uitgenodigd · Gesloten (sessie 206: \"ad 1. rechts\"; sessie 221: de afloopdatum nergens)",
           [x[1:] for x in u["reacties"]] == [["", "Reactie verstuurd"], ["", "Je bent uitgenodigd"], ["", "Gesloten"]], j(u["reacties"]))
-    check("TT-396 cluster 2 en deel 4: Mijn Reacties open: je eigen bericht en de knoppen, Oproep bekijken breed (zelfde raster als Mijn Oproepen); een gesloten oproep zonder knoppen",
+    check("TT-396 cluster 2, deel 4 en sessie 235 ad 1 (360 breed): Mijn Reacties open: je eigen bericht en de knoppen, Oproep bekijken breed; Naar het gesprek past niet naast Intrekken, dus onder elkaar; geen tekst op twee regels; een gesloten oproep zonder knoppen",
           u["reactieOpen"]["bericht"].startswith("Ik zing al twee jaar.") and u["reactieOpen"]["knoppen"] == ["Oproep bekijken", "Naar het gesprek", "Intrekken"]
-          and u["reactieOpen"]["breed"] == [True, False, False] and u["reactieGesloten"] == 0, j(u["reactieOpen"]))
+          and u["reactieOpen"]["breed"] == [True, True, True] and u["reactieOpen"]["hoog"] == [44, 44, 44] and u["reactieGesloten"] == 0, j(u["reactieOpen"]))
     lg = u["leeg"]
     check("TT-396 deel 4 (ad 5): een lege lijst geeft geen tweede gele knop; Alle oproepen en Profiel aanmaken met rand; alleen Oproep plaatsen geel (besluit Ronald 26-11-2026, sessie 221)",
           lg["mijn"] == 0 and lg["alle"] == 0 and lg["reacties"] == [["Alle oproepen", "btn btn-ghost"]] and lg["profiel"] == "btn btn-ghost"
@@ -22658,6 +22702,8 @@ S.data.prikbord_zoek = [];
               $('confirmNoBtn').click(); await w(300);
               u.aanpassen.naNiet = { laag: pbLaag, tab: pbTab };
               await pbAanpassen('o9'); await w(400);
+              // o9 is een oudere oproep met twee instrumenten; sinds sessie 226 één per oproep (kies er één).
+              pbKiesInstrument('Basgitaar');
               await pbNaarVoorbeeld(); await w(300);
               u.aanpassen.kader = { kader: !!$('pbKader'), knop: tekst($('pbNaarVoorbeeldKnop')) };
               await pbNaarVoorbeeld(); await w(300);
@@ -22704,8 +22750,8 @@ S.data.prikbord_zoek = [];
     check("TT-396 sessie 212 ad 4: terug na een wijziging vraagt Wijzigingen opslaan? met Niet opslaan en Opslaan; Niet opslaan gaat naar Mijn Oproepen",
           u["aanpassen"]["terugMet"]["vraag"] and u["aanpassen"]["terugMet"]["kop"] == "Wijzigingen opslaan?"
           and u["aanpassen"]["terugMet"]["knoppen"] == ["Niet opslaan", "Opslaan"] and u["aanpassen"]["naNiet"] == {"laag": None, "tab": "mijn"}, j(u["aanpassen"]))
-    check("TT-396 sessie 212 ad 4: bij aanpassen met lege vakken komt het kader en blijft de knop Opslaan (besluit Ronald 25-11-2026, sessie 213: \"ad 2. maak ervan: Opslaan\"); het voorbeeld heeft Opslaan",
-          u["aanpassen"]["kader"] == {"kader": True, "knop": "Opslaan"} and u["aanpassen"]["voorbeeld"] == {"laag": "voorbeeld", "knop": "Opslaan"}, j(u["aanpassen"]))
+    check("TT-396 sessie 212 ad 4 en sessie 235 ad 5: bij aanpassen met lege vakken komt het kader en blijft de knop onder het formulier Opslaan (sessie 213); de laatste knop in het voorbeeld heet Plaatsen (besluit Ronald 28-11-2026: \"ad 5. Plaatsen is goed.\")",
+          u["aanpassen"]["kader"] == {"kader": True, "knop": "Opslaan"} and u["aanpassen"]["voorbeeld"] == {"laag": "voorbeeld", "knop": "Plaatsen"}, j(u["aanpassen"]))
     check("TT-396 sessie 212: een nieuwe oproep na aanpassen heet weer Oproep plaatsen, met de knoppen Oproep plaatsen en Plaatsen",
           u["nieuw"]["titel"] == "Oproep plaatsen" and u["nieuw"]["knop"] == "Oproep plaatsen" and u["nieuw"]["voorbeeld"] == "Plaatsen", j(u["nieuw"]))
     check("TT-396 sessie 212 ad 5: Lees dit eerst punt 3 noemt je profiel (\"eens\")",
@@ -22988,7 +23034,19 @@ S.data.prikbord_zoek = window.__PB_BEWAARD ? [{ musician_id: 'm1', plaats: 'Delf
                       pbForm = pbLegeForm();
                       PB_MIJ.leeftijd = 56; u.tips56 = pbVakInhoud('verder').tips.slice(); u.vb = pbVakInhoud('verder').vb.slice();
                       PB_MIJ.leeftijd = 21; u.tip21 = pbVakInhoud('verder').tips.includes(PB_TIPS.eersteAfspraak);
-                      pbForm.wie = 'b1'; u.bandVb = pbVakInhoud('verder').vb.slice(); pbForm = null;
+                      pbForm.wie = 'b1'; u.bandVb = pbVakInhoud('verder').vb.slice();
+                      // Sessie 235: de voorbeelden bij wil en zoek volgen de eerste keuze bij Waarvoor; een voorbeeld van een
+                      // andere keuze gaat ook niet ongewijzigd door; de nieuwe tips bij Wie ben ik en Wanneer en waar.
+                      pbForm.wie = 'ik'; pbForm.soort = 'gezocht'; pbForm.doelen = [];
+                      u.zoekGeen = pbVakInhoud('zoek').vb[0];
+                      pbForm.doelen = ['jammen', 'band']; u.zoekJam = pbVakInhoud('zoek').vb.slice(); u.wilJam = pbVakInhoud('wil').vb[0];
+                      pbForm.soort = 'beschikbaar'; u.zoekBeschJam = pbVakInhoud('zoek').vb[0];
+                      pbForm.soort = 'gezocht'; pbForm.doelen = ['band']; u.zoekBand = pbVakInhoud('zoek').vb[0];
+                      pbForm.vakken = { zoek: u.zoekJam[0] }; pbForm.instrumenten = ['Drums'];
+                      u.andereKeuzeFout = (pbFormFouten().find(f => f[0] === 'pbVak-zoek') || [])[1] || null;
+                      u.wieTips = pbVakInhoud('wie').tips.slice(); u.waarTips = pbVakInhoud('waar').tips.slice();
+                      pbForm.wie = 'b1'; pbForm.doelen = ['invallen']; u.bandZoekInval = pbVakInhoud('zoek').vb[0];
+                      pbForm = null;
                       u.sleutels = PB_VAK_SLEUTELS.slice();
                       // Een oude oproep met tekst bij Kennismaken: de oproep toont hem, Aanpassen zet hem in Verder nog.
                       const oud = { id: 'oud1', plaatser_id: 'm1', soort: 'gezocht', doelen: ['jammen'], instrumenten: ['Drums'], leeftijden: ['16-18', '19-24'],
@@ -23039,8 +23097,16 @@ S.data.prikbord_zoek = window.__PB_BEWAARD ? [{ musician_id: 'm1', plaats: 'Delf
               pa.get("filtersRechts") == pb.get("filtersRechts") and ma.get("filtersRechts") == mb.get("filtersRechts") and pa.get("filtersRechts"), j([pa.get("filtersRechts"), pb.get("filtersRechts"), ma.get("filtersRechts"), mb.get("filtersRechts")]))
         vd = b.get("verder", {})
         check(f"{n}: vijf vakken, Kennismaken weg; Verder nog heeft de tips over kennismaken (besluit Ronald 27-11-2026: \"ja akkoord\")",
-              vd.get("sleutels") == ["wie", "wil", "zoek", "waar", "verder"] and vd.get("tips56") == ["Een keer samen spelen zegt meer dan veel berichten.", "Stel een kleine eerste stap voor, zoals één nummer samen spelen.", "Hou het contact eerst via de app. Later kun je je e-mailadres of telefoonnummer nog geven.", "Zet hier ook wat al vaststaat of wat je zelf meeneemt."]
-              and vd.get("tip21") is True and len(vd.get("vb", [])) == 3 and vd["vb"][0].startswith("Eerst een bericht hier in de app.") and vd.get("bandVb", [""])[0].startswith("Stuur ons een bericht via de app."), j(vd))
+              vd.get("sleutels") == ["wie", "wil", "zoek", "waar", "verder"] and vd.get("tips56") == ["Een keer samen spelen zegt vaak meer dan veel berichten.", "Een kleine eerste stap werkt goed, zoals één nummer samen spelen.", "Het is fijn om het contact eerst via de app te houden. Je e-mailadres of telefoonnummer kun je later nog geven.", "Is er iets wat al vaststaat, of iets wat je zelf meeneemt? Dan kun je dat hier kwijt."]
+              and vd.get("tip21") is True and len(vd.get("vb", [])) == 3 and vd["vb"][0].startswith("Lijkt het je leuk? Stuur gerust een berichtje hier in de app.") and vd.get("bandVb", [""])[0].startswith("Stuur ons gerust een berichtje via de app."), j(vd))
+        check(f"{n}: sessie 235: de voorbeelden bij Wie zoek ik en Wat wil ik volgen de eerste keuze bij Waarvoor (Jammen gaat over jammen, niet over een band); zonder keuze die van Band; ook bij beschikbaar en bij een band (besluit Ronald 28-11-2026: \"ad 1. ja\")",
+              vd.get("zoekJam", [""])[0].startswith("Mensen om een keer mee te jammen") and len(vd.get("zoekJam", [])) == 3 and all("band" not in x.lower() for x in vd.get("zoekJam", []))
+              and vd.get("wilJam", "").startswith("Ik heb zin om gewoon een keer te jammen") and vd.get("zoekBeschJam", "").startswith("Een paar muzikanten om af en toe mee te jammen")
+              and vd.get("zoekBand", "").startswith("Een bassist en een drummer") and vd.get("zoekGeen") == vd.get("zoekBand") and vd.get("bandZoekInval", "").startswith("Een drummer die onze nummers een paar keer wil meespelen"), j(vd))
+        check(f"{n}: sessie 235: een ongewijzigd voorbeeld van een andere keuze bij Waarvoor gaat ook niet door",
+              vd.get("andereKeuzeFout") == "Pas het voorbeeld aan, zodat het over jou gaat", j(vd.get("andereKeuzeFout")))
+        check(f"{n}: sessie 235: \"in welke plaats woon je?\" en \"Heb je een favoriete plek om te oefenen, of zoek je die nog?\" (bevindingen Ronald 28-11-2026)",
+              "Hoe oud ben je ongeveer, en in welke plaats woon je?" in vd.get("wieTips", []) and "Heb je een favoriete plek om te oefenen, of zoek je die nog?" in vd.get("waarTips", []), j([vd.get("wieTips"), vd.get("waarTips")]))
         check(f"{n}: een oproep van vóór deel 5 toont zijn tekst bij Kennismaken; Aanpassen zet die tekst in Verder nog",
               vd.get("koppenOud") == ["Wie ben ik", "Kennismaken", "Verder nog"]
               and vd.get("aanpassen") == {"verder": "Eerst een bericht.\n\nIk heb een versterker.", "kennisVeld": False, "kennis": False}, j(vd))
