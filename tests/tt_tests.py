@@ -18601,8 +18601,15 @@ def blok_tt543_onderdeel9():
     priv = html[html.index('id="view-privacy"'):html.index('id="view-terms"')]
     voorw = html[html.index('id="view-terms"'):html.index('id="view-gedragscode"')]
     gedrag = html[html.index('id="view-gedragscode"'):html.index('id="view-instellingen"')]
-    check("Over ons belooft geen applaus meer; de zin is 'Met een volledig profiel word je vaker gevonden.' (besluit Ronald 13-11-2026)",
-          "applaus" not in over and "Wie actief is, wordt sneller gevonden. Met een volledig profiel word je vaker gevonden.</p>" in over, "")
+    # TT-711 (besluit Ronald 28-11-2026, sessie 232: "ik vind het voorstel goed, met de kleine aanpassing in Wat doen we?";
+    # vervangt de zin van 13-11-2026): de nieuwe tekst, vier koppen boven Contact, de zin zonder uitroepteken.
+    check("Over ons belooft geen applaus; de zin is 'Hoe vollediger je profiel, hoe vaker je gevonden wordt.' (besluit Ronald 28-11-2026, TT-711)",
+          "applaus" not in over and "Hoe vollediger je profiel, hoe vaker je gevonden wordt.</p>" in over, "")
+    check("TT-711: Over ons heeft de koppen Wat is TalentTent?, Voor wie?, Wat doen we?, Hoe werkt het? en Contact, in die volgorde",
+          re.findall(r"<h2>(.*?)</h2>", over) == ["Wat is TalentTent?", "Voor wie?", "Wat doen we?", "Hoe werkt het?", "Contact"],
+          json.dumps(re.findall(r"<h2>(.*?)</h2>", over)))
+    check("TT-711: 'We helpen je graag op weg naar het podium.' zonder uitroepteken (besluit Ronald 28-11-2026)",
+          "We helpen je graag op weg naar het podium.</p>" in over and "!" not in re.sub(r"<[^>]+>", "", over), "")
     check("F2: Over ons heeft geen opmaak in de regel en draagt de vorm van de leespagina's (.doc-view)",
           'style=' not in over and 'search-filters doc-view' in over, "")
     # TT-547 (besluit Ronald 13-11-2026, D): overal "TalentTent". Commentaar telt niet mee.
@@ -22886,8 +22893,8 @@ S.data.prikbord_zoek = [];
               and bb.get("typvak") == "Hoi Mila, ik zag je oproep. Zullen we binnenkort afspreken? Wat denk je van …?" and bb.get("vanzelf") == 0 and bb.get("focus") is False, j(bb))
         check(f"{n}: het verstuurde bericht draagt de oproep mee", {k: v for k, v in (bb.get("verstuurd") or {}).items() if k != "toast"} == {"body": "Hoi Mila, ik zag je oproep. Zullen we binnenkort afspreken? Wat denk je van zondag?", "oproep": "o2", "naar": "m3"}, j(bb))
         over = a.get("over") or ""
-        check(f"{n}: Over ons noemt het prikbord (besluiten Ronald 26-11-2026, sessie 216: \"ad 2. prima. pas de zin erna ook meteen aan …\")",
-              "Op het prikbord zet je een oproep: wie je zoekt, of waarvoor je beschikbaar bent. Wij helpen je graag op weg naar het podium!" in over
+        check(f"{n}: Over ons noemt het prikbord (besluiten Ronald 26-11-2026, sessie 216; de laatste zin zonder uitroepteken en met We, besluiten Ronald 28-11-2026, TT-711)",
+              "Op het prikbord zet je een oproep: wie je zoekt, of waarvoor je beschikbaar bent. We helpen je graag op weg naar het podium." in over
               and "Bands zoeken hier" not in over, j(over[:300]))
         check(f"{n}: uitgelogd dezelfde knoptekst als ingelogd: Reageren, Stuur een bericht (sessie 216: \"ad 1. ja\")",
               b.get("knopGezocht") == "Reageren" and b.get("knopBeschikbaar") == "Stuur een bericht" and b.get("profielKnop") == "Stuur een bericht", j(b))
